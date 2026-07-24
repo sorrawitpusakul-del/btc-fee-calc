@@ -1,10 +1,9 @@
-const CACHE_NAME = 'btc-fee-calc-v2';
+const CACHE_NAME = 'btc-fee-calc-v3';
 const ASSETS = [
   './',
   './index.html',
-  './manifest.json',
-  './btc_logo.png',
-  './BTC FEE.png',
+  './manifest.json?v=2',
+  './btc_logo.png?v=2',
   './donate-qr.png'
 ];
 
