@@ -975,7 +975,7 @@
         window.onload = () => {
             fetchBtcPrice();
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW reg failed:', err));
+                navigator.serviceWorker.register('./sw.js?v=4').catch(err => console.warn('SW reg failed:', err));
             }
         };
     </script>
