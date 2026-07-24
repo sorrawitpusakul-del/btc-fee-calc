@@ -1,0 +1,23 @@
+{
+  "name": "BTC Fee Calc",
+  "short_name": "BTC Fee Calc",
+  "description": "Bitcoin Withdrawal & On-Chain Fee Calculator",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0F1219",
+  "theme_color": "#0F1219",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "BTC FEE.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "btc_logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

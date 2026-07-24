@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BTC Fee Calc</title>
+    
+    <!-- PWA Web App Manifest & Touch Icons -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="BTC FEE.png">
+    <link rel="apple-touch-icon" href="BTC FEE.png">
+    
+    <!-- Mobile Web App Meta -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BTC Fee Calc">
+    <meta name="theme-color" content="#0F1219">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        btc: {
+                            light: '#FCD535', // Binance yellow
+                            DEFAULT: '#F7931A', // Classic Bitcoin Orange
+                            dark: '#E87D0C',
+                        },
+                        darkmode: {
+                            bg: '#0F1219',
+                            card: '#1A1E26',
+                            border: '#2A303C'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+        body {
+            -webkit-tap-highlight-color: transparent;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        /* ซ่อนลูกศรใน input number */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        
+        /* Premium Glow Effect */
+        .glow-effect {
+            box-shadow: 0 0 25px rgba(247, 147, 26, 0.2);
+        }
+        .dark .glow-effect {
+            box-shadow: 0 0 35px rgba(247, 147, 26, 0.15);
+        }
+        
+        /* Input Focus Effect */
+        .custom-input {
+            transition: all 0.2s ease-in-out;
+        }
+        .custom-input:focus-within {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(247, 147, 26, 0.1);
+        }
+
+        /* Range Slider Styling */
+        input[type="range"] {
+            accent-color: #F7931A;
+        }
+    </style>
+</head>
+<body class="text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-darkmode-bg antialiased min-h-screen flex items-center justify-center p-3 sm:p-4">
+
+    <div class="bg-white dark:bg-darkmode-card w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden border border-gray-100 dark:border-darkmode-border relative transition-colors duration-300">
+        
+        <!-- Header Container -->
+        <div class="relative pb-5 px-5 sm:px-6 text-center bg-gradient-to-b from-orange-50 to-white dark:from-darkmode-bg dark:to-darkmode-card overflow-hidden">
+            <!-- Background Decorative Elements -->
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-btc/10 dark:bg-btc/5 rounded-full blur-3xl"></div>
+            
+            <!-- Top Action Bar -->
+            <div class="relative z-10 flex justify-between items-center pt-4 pb-2">
+                <!-- Left Brand Badge -->
+                <div class="flex items-center gap-1.5 text-gray-700 dark:text-gray-300 font-bold text-xs">
+                    <img src="btc_logo.png" alt="BTC Logo" class="w-4 h-4 object-contain">
+                    <span class="tracking-wide font-mono text-[11px] uppercase opacity-90">BTC Calc</span>
+                </div>
+
+                <!-- Right Control Buttons (Donate, Language, Help, Theme) -->
+                <div class="flex items-center gap-1.5">
+                    <button onclick="toggleDonateModal()" aria-label="Donate" title="Donate / Support" class="w-8 h-8 rounded-full bg-white/70 dark:bg-black/40 hover:bg-white dark:hover:bg-black/60 backdrop-blur-md border border-gray-200/80 dark:border-gray-700/60 text-red-500 transition-all shadow-sm flex items-center justify-center">
+                        <i class="fas fa-heart text-xs text-red-500 animate-pulse"></i>
+                    </button>
+
+                    <button onclick="toggleLanguage()" id="langBtn" class="h-8 px-2.5 rounded-full bg-white/70 dark:bg-black/40 hover:bg-white dark:hover:bg-black/60 backdrop-blur-md border border-gray-200/80 dark:border-gray-700/60 text-xs font-bold text-gray-800 dark:text-white transition-all shadow-sm flex items-center gap-1">
+                        <i class="fas fa-globe text-btc text-[11px]"></i>
+                        <span id="langLabel">EN</span>
+                    </button>
+
+                    <button onclick="toggleGuideModal()" aria-label="User Guide" class="w-8 h-8 rounded-full bg-white/70 dark:bg-black/40 hover:bg-white dark:hover:bg-black/60 backdrop-blur-md border border-gray-200/80 dark:border-gray-700/60 text-gray-800 dark:text-white transition-all shadow-sm flex items-center justify-center">
+                        <i class="fas fa-question text-xs text-btc"></i>
+                    </button>
+
+                    <button onclick="toggleTheme()" aria-label="Toggle Dark Mode" class="w-8 h-8 rounded-full bg-white/70 dark:bg-black/40 hover:bg-white dark:hover:bg-black/60 backdrop-blur-md border border-gray-200/80 dark:border-gray-700/60 text-gray-800 dark:text-white transition-all shadow-sm flex items-center justify-center">
+                        <i class="fas fa-moon dark:hidden text-xs"></i>
+                        <i class="fas fa-sun hidden dark:block text-xs text-btc-light"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Header Logo & Title -->
+            <div class="relative pt-1">
+                <div class="relative inline-flex items-center justify-center w-16 h-16 bg-white dark:bg-darkmode-bg rounded-full shadow-lg shadow-btc/20 mb-2.5 glow-effect border border-orange-100 dark:border-darkmode-border p-2">
+                    <img src="btc_logo.png" alt="Bitcoin Logo" class="w-full h-full object-contain drop-shadow">
+                </div>
+                
+                <h1 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight" data-i18n="appTitle">BTC Fee Calculator</h1>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-light" data-i18n="appSubtitle">คำนวณความคุ้มค่าก่อนถอน & ตรวจสอบค่าโอน On-Chain</p>
+            </div>
+
+            <!-- Mode Selector Switcher (Segmented Control) -->
+            <div class="mt-4 bg-gray-200/70 dark:bg-[#15181F] p-1 rounded-2xl border border-gray-200 dark:border-darkmode-border grid grid-cols-2 gap-1 text-xs font-semibold">
+                <button type="button" id="modeExchangeBtn" onclick="switchCalcMode('exchange')" class="py-2 rounded-xl transition-all duration-200 bg-btc text-white shadow-sm flex items-center justify-center gap-1.5">
+                    <i class="fas fa-building"></i> <span data-i18n="tabExchangeMode">ถอนจาก Exchange</span>
+                </button>
+                <button type="button" id="modeOnchainBtn" onclick="switchCalcMode('onchain')" class="py-2 rounded-xl transition-all duration-200 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center justify-center gap-1.5">
+                    <i class="fas fa-cubes text-btc"></i> <span data-i18n="tabOnchainMode">โอน On-Chain</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="p-5 sm:p-6 space-y-5 sm:space-y-6">
+
+            <!-- Shared BTC Price Input (THB & USD) -->
+            <div class="custom-input group">
+                <div class="flex justify-between items-end mb-2">
+                    <label class="text-sm font-medium text-gray-600 dark:text-gray-300" data-i18n="labelBtcPrice">ราคา BTC ปัจจุบัน (บาท)</label>
+                    <button onclick="fetchBtcPrice()" id="refreshBtn" class="text-xs bg-btc/10 hover:bg-btc/20 dark:bg-btc/20 dark:hover:bg-btc/30 text-btc-dark dark:text-btc-light px-3 py-1.5 rounded-full transition-all duration-200 flex items-center gap-1.5 font-medium">
+                        <i class="fas fa-sync-alt"></i> <span data-i18n="btnFetchLive">ดึงราคาสด</span>
+                    </button>
+                </div>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-tag text-gray-400 dark:text-gray-500 group-focus-within:text-btc transition-colors"></i>
+                    </div>
+                    <input type="number" id="btcPrice" value="2200000" oninput="onPriceInputChange()" class="w-full bg-gray-50 dark:bg-[#15181F] border border-gray-200 dark:border-darkmode-border text-gray-900 dark:text-white text-lg rounded-2xl focus:ring-2 focus:ring-btc/50 focus:border-btc block pl-11 pr-16 py-3.5 transition-all outline-none">
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 dark:text-gray-500 font-medium text-sm">THB</span>
+                </div>
+                
+                <div class="flex justify-between items-center mt-2 px-1">
+                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wide flex items-center gap-1.5" id="btcUsdHint">
+                        <i class="fas fa-globe text-btc text-[10px]"></i> ≈ $0.00 USD
+                    </span>
+                    <span id="priceSourceTag" class="text-[10px] text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-darkmode-bg px-2 py-0.5 rounded-md font-mono">Live</span>
+                </div>
+            </div>
+
+            <!-- ================= MODE 1: EXCHANGE WITHDRAWAL ================= -->
+            <div id="exchangeCalcSection" class="space-y-5">
+                <!-- ส่วนกรอกยอดถอน พร้อม Unit Selector -->
+                <div class="custom-input group">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-sm font-medium text-gray-600 dark:text-gray-300" data-i18n="labelWithdrawAmount">ยอดที่ต้องการถอน</label>
+                        
+                        <div class="flex bg-gray-100 dark:bg-darkmode-bg p-1 rounded-xl border border-gray-200 dark:border-darkmode-border text-xs font-medium">
+                            <button type="button" id="unitSatBtn" onclick="setWithdrawUnit('SAT')" class="px-2.5 py-1 rounded-lg transition-all duration-200 bg-btc text-white shadow-sm font-semibold">SAT</button>
+                            <button type="button" id="unitBtcBtn" onclick="setWithdrawUnit('BTC')" class="px-2.5 py-1 rounded-lg transition-all duration-200 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">BTC</button>
+                            <button type="button" id="unitThbBtn" onclick="setWithdrawUnit('THB')" class="px-2.5 py-1 rounded-lg transition-all duration-200 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">THB</button>
+                        </div>
+                    </div>
+                    
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-wallet text-gray-400 dark:text-gray-500 group-focus-within:text-btc transition-colors"></i>
+                        </div>
+                        <input type="number" id="withdrawInput" value="200000" step="1" oninput="calculate()" class="w-full bg-gray-50 dark:bg-[#15181F] border border-gray-200 dark:border-darkmode-border text-gray-900 dark:text-white text-lg rounded-2xl focus:ring-2 focus:ring-btc/50 focus:border-btc block pl-11 pr-16 py-3.5 transition-all outline-none">
+                        <span id="withdrawUnitLabel" class="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 dark:text-gray-500 font-medium text-sm">SAT</span>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-right tracking-wide" id="withdrawConvertedHint">≈ 0.00200000 BTC</p>
+                </div>
+
+                <!-- ส่วนกรอกค่าธรรมเนียม Exchange + Presets -->
+                <div class="custom-input group">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-sm font-medium text-gray-600 dark:text-gray-300" data-i18n="labelExchangeFee">ค่าธรรมเนียมถอนของ Exchange</label>
+                    </div>
+                    
+                    <div class="relative mb-2.5">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-percentage text-gray-400 dark:text-gray-500 group-focus-within:text-btc transition-colors"></i>
+                        </div>
+                        <input type="number" id="feeSat" value="2000" oninput="calculate()" class="w-full bg-gray-50 dark:bg-[#15181F] border border-gray-200 dark:border-darkmode-border text-gray-900 dark:text-white text-lg rounded-2xl focus:ring-2 focus:ring-btc/50 focus:border-btc block pl-11 pr-16 py-3.5 transition-all outline-none">
+                        <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 dark:text-gray-500 font-medium text-sm">SAT</span>
+                    </div>
+
+                    <div class="flex flex-wrap gap-1.5 items-center">
+                        <span class="text-[11px] text-gray-400 dark:text-gray-500 mr-1 font-medium"><i class="fas fa-bolt text-btc text-xs"></i> <span data-i18n="presetQuickSelect">เลือกเร็ว:</span></span>
+                        <button type="button" onclick="setFeePreset(1000)" class="fee-preset-btn text-xs px-2.5 py-1 rounded-xl bg-gray-100 dark:bg-[#15181F] border border-gray-200 dark:border-darkmode-border text-gray-600 dark:text-gray-300 hover:border-btc hover:text-btc dark:hover:border-btc transition-all">1k (LN)</button>
+                        <button type="button" onclick="setFeePreset(10000)" class="fee-preset-btn text-xs px-2.5 py-1 rounded-xl bg-gray-100 dark:bg-[#15181F] border border-gray-200 dark:border-darkmode-border text-gray-600 dark:text-gray-300 hover:border-btc hover:text-btc dark:hover:border-btc transition-all">10k</button>
+                        <button type="button" onclick="setFeePreset(20000)" class="fee-preset-btn text-xs px-2.5 py-1 rounded-xl bg-gray-100 dark:bg-[#15181F] border border-gray-200 dark:border-darkmode-border text-gray-600 dark:text-gray-300 hover:border-btc hover:text-btc dark:hover:border-btc transition-all">20k</button>
+                        <button type="button" onclick="setFeePreset(25000)" class="fee-preset-btn text-xs px-2.5 py-1 rounded-xl bg-gray-100 dark:bg-[#15181F] border border-gray-200 dark:border-darkmode-border text-gray-600 dark:text-gray-300 hover:border-btc hover:text-btc dark:hover:border-btc transition-all">25k (Local)</button>
+                    </div>
+
+                    <div class="flex justify-between items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        <span id="mempoolCompareBadge" class="text-[11px] font-mono text-btc">Mempool Live: -- sat/vB</span>
+                        <span id="feeBtcHint" class="tracking-wide">0.00002000 BTC</span>
+                    </div>
+                </div>
+
+                <!-- ผลลัพธ์ Exchange -->
+                <div class="mt-6 relative">
+                    <div class="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-darkmode-border to-transparent -mt-3"></div>
+                    
+                    <div class="bg-gray-50 dark:bg-[#15181F] p-4 sm:p-5 rounded-2xl border border-gray-100 dark:border-darkmode-border space-y-3">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-gray-500 dark:text-gray-400 text-sm font-medium" data-i18n="resultNetValue">มูลค่าที่จะได้รับจริง:</span>
+                            <div class="text-right">
+                                <div class="font-bold text-gray-900 dark:text-white text-xl" id="netThb">0.00 ฿</div>
+                                <div class="text-xs text-gray-400 font-medium" id="netUsd">≈ $0.00 USD</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-gray-500 dark:text-gray-400 text-sm font-medium" data-i18n="resultFeeAmount">เสียค่าธรรมเนียม:</span>
+                            <div class="text-right">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 text-base" id="feeThb">0.00 ฿</div>
+                                <div class="text-xs text-gray-400" id="feeUsd">≈ $0.00 USD</div>
+                            </div>
+                        </div>
+                        
+                        <div class="h-px bg-gray-200 dark:bg-darkmode-border w-full my-3"></div>
+                        
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-600 dark:text-gray-300 font-medium" data-i18n="resultFeeRatio">สัดส่วนค่าธรรมเนียม:</span>
+                            <span class="font-bold text-2xl tracking-tight" id="feePercent">0.00%</span>
+                        </div>
+                        
+                        <div id="statusBox" class="p-3.5 rounded-xl text-center font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2">
+                            กำลังคำนวณ...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= MODE 2: ON-CHAIN MEMPOOL CALCULATOR ================= -->
+            <div id="onchainCalcSection" class="space-y-5 hidden">
+                <!-- Mempool Live Rates Summary Grid -->
+                <div class="bg-gray-50 dark:bg-[#15181F] p-4 rounded-2xl border border-gray-100 dark:border-darkmode-border space-y-2">
+                    <div class="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        <span class="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                            <i class="fas fa-signal text-btc"></i> <span data-i18n="labelMempoolLiveHeader">ค่าธรรมเนียม Mempool สด</span>
+                        </span>
+                        <span id="mempoolStatusTag" class="text-[10px] bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md font-mono">Live</span>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-1.5 text-center text-xs font-mono">
+                        <div onclick="selectPriorityTier('fastest')" class="p-2 rounded-xl bg-white dark:bg-darkmode-card border border-gray-200 dark:border-darkmode-border cursor-pointer hover:border-btc transition-all">
+                            <div class="text-[10px] text-gray-400 font-sans" data-i18n="tierFastest">ด่วนสุด</div>
+                            <div class="font-bold text-btc mt-0.5 text-sm" id="rateFastest">--</div>
+                            <div class="text-[9px] text-gray-400">sat/vB</div>
+                        </div>
+                        <div onclick="selectPriorityTier('halfHour')" class="p-2 rounded-xl bg-white dark:bg-darkmode-card border border-gray-200 dark:border-darkmode-border cursor-pointer hover:border-btc transition-all">
+                            <div class="text-[10px] text-gray-400 font-sans" data-i18n="tier30m">30 นาที</div>
+                            <div class="font-bold text-amber-500 mt-0.5 text-sm" id="rate30m">--</div>
+                            <div class="text-[9px] text-gray-400">sat/vB</div>
+                        </div>
+                        <div onclick="selectPriorityTier('hour')" class="p-2 rounded-xl bg-white dark:bg-darkmode-card border border-gray-200 dark:border-darkmode-border cursor-pointer hover:border-btc transition-all">
+                            <div class="text-[10px] text-gray-400 font-sans" data-i18n="tier1h">1 ชม.</div>
+                            <div class="font-bold text-slate-500 dark:text-slate-300 mt-0.5 text-sm" id="rate1h">--</div>
+                            <div class="text-[9px] text-gray-400">sat/vB</div>
+                        </div>
+                        <div onclick="selectPriorityTier('economy')" class="p-2 rounded-xl bg-white dark:bg-darkmode-card border border-gray-200 dark:border-darkmode-border cursor-pointer hover:border-btc transition-all">
+                            <div class="text-[10px] text-gray-400 font-sans" data-i18n="tierEco">ประหยัด</div>
+                            <div class="font-bold text-gray-500 mt-0.5 text-sm" id="rateEco">--</div>
+                            <div class="text-[9px] text-gray-400">sat/vB</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transaction Type Selector -->
+                <div class="custom-input group">
+                    <label class="text-sm font-medium text-gray-600 dark:text-gray-300 block mb-2" data-i18n="labelTxType">ประเภทธุรกรรม (Transaction Type)</label>
+                    <select id="txTypeSelect" onchange="onTxTypeChange()" class="w-full bg-gray-50 dark:bg-[#15181F] border border-gray-200 dark:border-darkmode-border text-gray-900 dark:text-white text-sm rounded-2xl focus:ring-2 focus:ring-btc/50 focus:border-btc block px-4 py-3.5 transition-all outline-none">
+                        <option value="140" selected>Native SegWit (1 input, 2 output) — ~140 vB</option>
+                        <option value="226">Legacy P2PKH — ~226 vB</option>
+                        <option value="296">Multisig 2-of-3 — ~296 vB</option>
+                        <option value="320">Batch Payment (5 outputs) — ~320 vB</option>
+                        <option value="custom">Custom Size (vBytes)</option>
+                    </select>
+                </div>
+
+                <!-- Custom Size Field -->
+                <div id="customSizeWrap" class="custom-input group hidden">
+                    <label class="text-sm font-medium text-gray-600 dark:text-gray-300 block mb-2" data-i18n="labelCustomSize">ขนาดธุรกรรม (vBytes)</label>
+                    <input type="number" id="customSizeInput" value="140" min="60" oninput="calculateOnchain()" class="w-full bg-gray-50 dark:bg-[#15181F] border border-gray-200 dark:border-darkmode-border text-gray-900 dark:text-white text-base rounded-2xl focus:ring-2 focus:ring-btc/50 focus:border-btc block px-4 py-3 transition-all outline-none">
+                </div>
+
+                <!-- Custom Sat/vB Rate Slider -->
+                <div class="custom-input group">
+                    <div class="flex justify-between items-center mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">
+                        <span data-i18n="labelTargetRate">อัตราค่าธรรมเนียม (Fee Rate)</span>
+                        <span class="font-mono font-bold text-btc" id="onchainRateVal">15 sat/vB</span>
+                    </div>
+                    <input type="range" id="onchainRateSlider" min="1" max="300" value="15" oninput="onOnchainSliderChange()" class="w-full h-2 bg-gray-200 dark:bg-darkmode-border rounded-lg cursor-pointer">
+                </div>
+
+                <!-- ผลลัพธ์ On-Chain -->
+                <div class="mt-6 relative">
+                    <div class="bg-gray-50 dark:bg-[#15181F] p-4 sm:p-5 rounded-2xl border border-gray-100 dark:border-darkmode-border space-y-3">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-gray-500 dark:text-gray-400 text-sm font-medium" data-i18n="resultTotalOnchainFee">ค่าธรรมเนียมโอน On-Chain:</span>
+                            <div class="text-right">
+                                <div class="font-bold text-btc text-xl font-mono" id="onchainFeeSat">0 sats</div>
+                                <div class="text-xs text-gray-400 font-medium" id="onchainFeeBtc">0.00000000 BTC</div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-gray-500 dark:text-gray-400 text-sm font-medium" data-i18n="resultFeeInFiat">มูลค่าในเงินบาท / USD:</span>
+                            <div class="text-right font-medium">
+                                <span class="text-gray-900 dark:text-white text-base font-bold" id="onchainFeeThb">0.00 ฿</span>
+                                <span class="text-xs text-gray-400 ml-1" id="onchainFeeUsd">≈ $0.00 USD</span>
+                            </div>
+                        </div>
+
+                        <div class="h-px bg-gray-200 dark:bg-darkmode-border w-full my-3"></div>
+
+                        <div class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed" id="onchainEtaHint">
+                            <i class="fas fa-clock text-btc mr-1"></i> <span data-i18n="hintEta">เวลาคาดการณ์ในการยืนยันบล็อก:</span> <b class="text-gray-800 dark:text-gray-200" id="onchainEtaVal">~30 นาที</b>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- User Guide Modal Overlay -->
+    <div id="guideModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden transition-opacity duration-200">
+        <div class="bg-white dark:bg-darkmode-card w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-gray-100 dark:border-darkmode-border relative modal-enter-active">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-full bg-btc/20 text-btc flex items-center justify-center font-bold text-sm">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-gray-900 dark:text-white" data-i18n="guideModalTitle">คู่มือการใช้งาน</h3>
+                </div>
+                <button onclick="toggleGuideModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-white w-8 h-8 rounded-full flex items-center justify-center transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <div class="flex gap-3 items-start">
+                    <div class="w-6 h-6 rounded-full bg-orange-100 dark:bg-orange-900/40 text-btc font-bold flex items-center justify-center shrink-0 text-[11px]">1</div>
+                    <div>
+                        <div class="font-semibold text-gray-900 dark:text-white text-sm" data-i18n="guideStep1Title">โหมดถอนจาก Exchange</div>
+                        <div class="text-gray-500 dark:text-gray-400 mt-0.5" data-i18n="guideStep1Desc">ใช้คำนวณว่ายอดที่จะถอนออกจากเว็บเทรดคุ้มค่า % ค่าถอนหรือไม่ (แนะนำ ≤ 1.0%)</div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 items-start">
+                    <div class="w-6 h-6 rounded-full bg-orange-100 dark:bg-orange-900/40 text-btc font-bold flex items-center justify-center shrink-0 text-[11px]">2</div>
+                    <div>
+                        <div class="font-semibold text-gray-900 dark:text-white text-sm" data-i18n="guideStep2Title">โหมดโอน On-Chain</div>
+                        <div class="text-gray-500 dark:text-gray-400 mt-0.5" data-i18n="guideStep2Desc">ดึงค่า sat/vB สดจาก Mempool คำนวณค่าธรรมเนียมเหมืองบล็อกเชนจริงตามขนาด vBytes</div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 items-start">
+                    <div class="w-6 h-6 rounded-full bg-orange-100 dark:bg-orange-900/40 text-btc font-bold flex items-center justify-center shrink-0 text-[11px]">3</div>
+                    <div>
+                        <div class="font-semibold text-gray-900 dark:text-white text-sm" data-i18n="guideStep3Title">การดึงราคาสด</div>
+                        <div class="text-gray-500 dark:text-gray-400 mt-0.5" data-i18n="guideStep3Desc">กด "ดึงราคาสด" ดึงราคาบาท (Bitkub) และราคา USD (Binance) พร้อมกัน</div>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="toggleGuideModal()" class="w-full mt-6 py-2.5 rounded-2xl bg-btc hover:bg-btc-dark text-white font-medium text-xs transition-colors shadow-md shadow-btc/20" data-i18n="btnCloseGuide">
+                เข้าใจแล้ว
+            </button>
+        </div>
+    </div>
+
+    <!-- Donate Modal Overlay -->
+    <div id="donateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden transition-opacity duration-200">
+        <div class="bg-white dark:bg-darkmode-card w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-gray-100 dark:border-darkmode-border relative modal-enter-active text-center">
+            <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/40 text-red-500 flex items-center justify-center font-bold text-sm">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-gray-900 dark:text-white" data-i18n="donateModalTitle">สนับสนุนผู้พัฒนา</h3>
+                </div>
+                <button onclick="toggleDonateModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-white w-8 h-8 rounded-full flex items-center justify-center transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="my-3 flex justify-center">
+                <div class="bg-white p-3 rounded-2xl border border-gray-200 shadow-md inline-block max-w-[210px]">
+                    <img src="donate-qr.png" alt="Donate QR Code" class="w-full h-auto rounded-xl">
+                </div>
+            </div>
+
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 px-2 leading-relaxed" data-i18n="donateModalDesc">
+                สแกน QR Code เพื่อเลี้ยงกาแฟหรือสนับสนุนการพัฒนาแอปพลิเคชัน ขอบคุณครับ!
+            </p>
+
+            <button onclick="toggleDonateModal()" class="w-full mt-5 py-2.5 rounded-2xl bg-btc hover:bg-btc-dark text-white font-medium text-xs transition-colors shadow-md shadow-btc/20" data-i18n="btnCloseDonate">
+                ปิดหน้าต่าง
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        let currentMode = 'exchange'; // 'exchange' | 'onchain'
+        let currentUnit = 'SAT'; // 'SAT' | 'BTC' | 'THB'
+        let currentLang = 'th'; // 'th' | 'en'
+        let currentBtcUsdPrice = 0; // Price in USD from Binance
+        let mempoolFees = { fastestFee: 25, halfHourFee: 18, hourFee: 12, economyFee: 6 };
+
+        const STORAGE_KEY = 'btcFeeCalc_savedData';
+
+        // --- Translation Dictionary (i18n) ---
+        const translations = {
+            th: {
+                appTitle: 'BTC Fee Calculator',
+                appSubtitle: 'คำนวณความคุ้มค่าก่อนถอน & ตรวจสอบค่าโอน On-Chain',
+                tabExchangeMode: 'ถอนจาก Exchange',
+                tabOnchainMode: 'โอน On-Chain',
+                labelBtcPrice: 'ราคา BTC ปัจจุบัน (บาท)',
+                btnFetchLive: 'ดึงราคาสด',
+                labelWithdrawAmount: 'ยอดที่ต้องการถอน',
+                labelExchangeFee: 'ค่าธรรมเนียมถอนของ Exchange',
+                presetQuickSelect: 'เลือกเร็ว:',
+                resultNetValue: 'มูลค่าที่จะได้รับจริง:',
+                resultFeeAmount: 'เสียค่าธรรมเนียม:',
+                resultFeeRatio: 'สัดส่วนค่าธรรมเนียม:',
+                statusCalculating: 'กำลังคำนวณ...',
+                statusTooLow: 'ยอดถอนน้อยเกินไป',
+                statusEfficient: 'คุ้มค่าแก่การถอน (≤ 1%)',
+                statusAcceptable: 'พอรับได้ (ควรสะสมเพิ่ม)',
+                statusNotWorth: 'ยังไม่คุ้ม! ควรสะสมเหรียญเพิ่ม',
+                labelMempoolLiveHeader: 'ค่าธรรมเนียม Mempool สด',
+                tierFastest: 'ด่วนสุด',
+                tier30m: '30 นาที',
+                tier1h: '1 ชม.',
+                tierEco: 'ประหยัด',
+                labelTxType: 'ประเภทธุรกรรม (Transaction Type)',
+                labelCustomSize: 'ขนาดธุรกรรม (vBytes)',
+                labelTargetRate: 'อัตราค่าธรรมเนียม (Fee Rate)',
+                resultTotalOnchainFee: 'ค่าธรรมเนียมโอน On-Chain:',
+                resultFeeInFiat: 'มูลค่าในเงินบาท / USD:',
+                hintEta: 'เวลาคาดการณ์ในการยืนยันบล็อก:',
+                guideModalTitle: 'คู่มือการใช้งาน',
+                guideStep1Title: '1. โหมดถอนจาก Exchange',
+                guideStep1Desc: 'ใช้คำนวณว่ายอดที่จะถอนออกจากเว็บเทรดคุ้มค่า % ค่าถอนหรือไม่ (แนะนำ ≤ 1.0%)',
+                guideStep2Title: '2. โหมดโอน On-Chain',
+                guideStep2Desc: 'ดึงค่า sat/vB สดจาก Mempool คำนวณค่าธรรมเนียมเหมืองบล็อกเชนจริงตามขนาด vBytes',
+                guideStep3Title: '3. การดึงราคาสด',
+                guideStep3Desc: 'กด "ดึงราคาสด" ดึงราคาบาท (Bitkub) และราคา USD (Binance) พร้อมกัน',
+                btnCloseGuide: 'เข้าใจแล้ว',
+                donateModalTitle: 'สนับสนุนผู้พัฒนา',
+                donateModalDesc: 'สแกน QR Code เพื่อเลี้ยงกาแฟหรือสนับสนุนการพัฒนาแอปพลิเคชัน ขอบคุณครับ!',
+                btnCloseDonate: 'ปิดหน้าต่าง'
+            },
+            en: {
+                appTitle: 'BTC Fee Calculator',
+                appSubtitle: 'Evaluate withdrawal efficiency & check On-Chain tx fees',
+                tabExchangeMode: 'Exchange Withdrawal',
+                tabOnchainMode: 'On-Chain Transfer',
+                labelBtcPrice: 'Current BTC Price (THB)',
+                btnFetchLive: 'Fetch Live',
+                labelWithdrawAmount: 'Withdrawal Amount',
+                labelExchangeFee: 'Exchange Withdrawal Fee',
+                presetQuickSelect: 'Quick Presets:',
+                resultNetValue: 'Net Amount Received:',
+                resultFeeAmount: 'Fee Amount Paid:',
+                resultFeeRatio: 'Fee Percentage Ratio:',
+                statusCalculating: 'Calculating...',
+                statusTooLow: 'Withdrawal amount too low',
+                statusEfficient: 'Highly Efficient (≤ 1%)',
+                statusAcceptable: 'Acceptable (Accumulate more recommended)',
+                statusNotWorth: 'Not Worth It! Accumulate more BTC first',
+                labelMempoolLiveHeader: 'Mempool Live Rates',
+                tierFastest: 'Fastest',
+                tier30m: '30 mins',
+                tier1h: '1 hour',
+                tierEco: 'Economy',
+                labelTxType: 'Transaction Type',
+                labelCustomSize: 'Transaction Size (vBytes)',
+                labelTargetRate: 'Target Fee Rate',
+                resultTotalOnchainFee: 'Total On-Chain Tx Fee:',
+                resultFeeInFiat: 'Equivalent in THB / USD:',
+                hintEta: 'Estimated Confirmation Time:',
+                guideModalTitle: 'User Guide',
+                guideStep1Title: '1. Exchange Withdrawal Mode',
+                guideStep1Desc: 'Calculates if withdrawing from exchange is fee-efficient (≤1.0% recommended)',
+                guideStep2Title: '2. On-Chain Transfer Mode',
+                guideStep2Desc: 'Fetches live Mempool sat/vB rates to compute exact mining fee based on vBytes',
+                guideStep3Title: '3. Fetching Live Prices',
+                guideStep3Desc: 'Click "Fetch Live" to get THB (Bitkub) & USD (Binance) prices simultaneously',
+                btnCloseGuide: 'Got It!',
+                donateModalTitle: 'Support Developer',
+                donateModalDesc: 'Scan QR Code to buy us a coffee & support app development. Thank you!',
+                btnCloseDonate: 'Close'
+            }
+        };
+
+        // --- Mode Switcher ---
+        function switchCalcMode(mode) {
+            currentMode = mode;
+            const exSection = document.getElementById('exchangeCalcSection');
+            const onSection = document.getElementById('onchainCalcSection');
+            const exBtn = document.getElementById('modeExchangeBtn');
+            const onBtn = document.getElementById('modeOnchainBtn');
+
+            const activeClass = 'bg-btc text-white shadow-sm font-semibold';
+            const inactiveClass = 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white';
+
+            if (mode === 'exchange') {
+                exSection.classList.remove('hidden');
+                onSection.classList.add('hidden');
+                exBtn.className = `py-2 rounded-xl transition-all duration-200 ${activeClass} flex items-center justify-center gap-1.5`;
+                onBtn.className = `py-2 rounded-xl transition-all duration-200 ${inactiveClass} flex items-center justify-center gap-1.5`;
+                calculate();
+            } else {
+                exSection.classList.add('hidden');
+                onSection.classList.remove('hidden');
+                onBtn.className = `py-2 rounded-xl transition-all duration-200 ${activeClass} flex items-center justify-center gap-1.5`;
+                exBtn.className = `py-2 rounded-xl transition-all duration-200 ${inactiveClass} flex items-center justify-center gap-1.5`;
+                calculateOnchain();
+            }
+            saveData();
+        }
+
+        // --- Language Switcher ---
+        function toggleLanguage() {
+            currentLang = currentLang === 'th' ? 'en' : 'th';
+            applyLanguage();
+            calculate();
+            calculateOnchain();
+            saveData();
+        }
+
+        function applyLanguage() {
+            document.getElementById('langLabel').innerText = currentLang === 'th' ? 'EN' : 'TH';
+            document.documentElement.lang = currentLang;
+
+            const t = translations[currentLang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) {
+                    el.innerText = t[key];
+                }
+            });
+        }
+
+        // --- User Guide Modal ---
+        function toggleGuideModal() {
+            const modal = document.getElementById('guideModal');
+            modal.classList.toggle('hidden');
+        }
+
+        // --- Donate Modal ---
+        function toggleDonateModal() {
+            const modal = document.getElementById('donateModal');
+            modal.classList.toggle('hidden');
+        }
+
+        // --- Theme Management ---
+        function toggleTheme() {
+            const html = document.documentElement;
+            html.classList.toggle('dark');
+            
+            if (html.classList.contains('dark')) {
+                localStorage.setItem('theme', 'dark');
+            } else {
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        function initTheme() {
+            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        // --- Multi-unit Switcher (Exchange Mode) ---
+        function setWithdrawUnit(unit) {
+            if (currentUnit === unit) return;
+
+            const price = parseFloat(document.getElementById('btcPrice').value) || 0;
+            const currentVal = parseFloat(document.getElementById('withdrawInput').value) || 0;
+
+            let currentSat = 0;
+            if (currentUnit === 'SAT') {
+                currentSat = currentVal;
+            } else if (currentUnit === 'BTC') {
+                currentSat = currentVal * 100000000;
+            } else if (currentUnit === 'THB') {
+                currentSat = price > 0 ? (currentVal / price) * 100000000 : 0;
+            }
+
+            currentUnit = unit;
+            updateUnitTabsUI();
+
+            const inputEl = document.getElementById('withdrawInput');
+            if (unit === 'SAT') {
+                inputEl.value = Math.round(currentSat);
+                inputEl.step = '1';
+            } else if (unit === 'BTC') {
+                inputEl.value = (currentSat / 100000000).toFixed(8);
+                inputEl.step = '0.00000001';
+            } else if (unit === 'THB') {
+                const thbVal = (currentSat / 100000000) * price;
+                inputEl.value = Math.round(thbVal);
+                inputEl.step = '1';
+            }
+
+            document.getElementById('withdrawUnitLabel').innerText = unit;
+            calculate();
+        }
+
+        function updateUnitTabsUI() {
+            const units = ['SAT', 'BTC', 'THB'];
+            const activeClass = 'bg-btc text-white shadow-sm font-semibold';
+            const inactiveClass = 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white';
+
+            units.forEach(u => {
+                const btn = document.getElementById(`unit${u.charAt(0) + u.slice(1).toLowerCase()}Btn`);
+                if (u === currentUnit) {
+                    btn.className = `px-2.5 py-1 rounded-lg transition-all duration-200 ${activeClass}`;
+                } else {
+                    btn.className = `px-2.5 py-1 rounded-lg transition-all duration-200 ${inactiveClass}`;
+                }
+            });
+        }
+
+        // --- Fee Presets ---
+        function setFeePreset(presetSat) {
+            document.getElementById('feeSat').value = presetSat;
+            calculate();
+        }
+
+        function highlightActivePreset(feeSat) {
+            const buttons = document.querySelectorAll('.fee-preset-btn');
+            buttons.forEach(btn => {
+                const text = btn.innerText;
+                let val = 0;
+                if (text.includes('1k')) val = 1000;
+                else if (text.includes('10k')) val = 10000;
+                else if (text.includes('20k')) val = 20000;
+                else if (text.includes('25k')) val = 25000;
+
+                if (val === feeSat) {
+                    btn.className = 'fee-preset-btn text-xs px-2.5 py-1 rounded-xl bg-btc text-white border border-btc font-medium shadow-sm transition-all';
+                } else {
+                    btn.className = 'fee-preset-btn text-xs px-2.5 py-1 rounded-xl bg-gray-100 dark:bg-[#15181F] border border-gray-200 dark:border-darkmode-border text-gray-600 dark:text-gray-300 hover:border-btc hover:text-btc dark:hover:border-btc transition-all';
+                }
+            });
+        }
+
+        // --- On-Chain Mempool Logic ---
+        function onTxTypeChange() {
+            const sel = document.getElementById('txTypeSelect').value;
+            const customWrap = document.getElementById('customSizeWrap');
+            if (sel === 'custom') {
+                customWrap.classList.remove('hidden');
+            } else {
+                customWrap.classList.add('hidden');
+            }
+            calculateOnchain();
+        }
+
+        function selectPriorityTier(tier) {
+            let rate = mempoolFees.halfHourFee;
+            if (tier === 'fastest') rate = mempoolFees.fastestFee;
+            else if (tier === 'halfHour') rate = mempoolFees.halfHourFee;
+            else if (tier === 'hour') rate = mempoolFees.hourFee;
+            else if (tier === 'economy') rate = mempoolFees.economyFee;
+
+            document.getElementById('onchainRateSlider').value = rate;
+            document.getElementById('onchainRateVal').innerText = `${rate} sat/vB`;
+            calculateOnchain();
+        }
+
+        function onOnchainSliderChange() {
+            const val = document.getElementById('onchainRateSlider').value;
+            document.getElementById('onchainRateVal').innerText = `${val} sat/vB`;
+            calculateOnchain();
+        }
+
+        function calculateOnchain() {
+            const priceThb = parseFloat(document.getElementById('btcPrice').value) || 0;
+            const selType = document.getElementById('txTypeSelect').value;
+            
+            let vBytes = 140;
+            if (selType === 'custom') {
+                vBytes = parseInt(document.getElementById('customSizeInput').value, 10) || 140;
+            } else {
+                vBytes = parseInt(selType, 10) || 140;
+            }
+
+            const satPerVb = parseInt(document.getElementById('onchainRateSlider').value, 10) || 15;
+            const totalSats = vBytes * satPerVb;
+            const totalBtc = totalSats / 100000000;
+            const totalThb = totalBtc * priceThb;
+            const totalUsd = currentBtcUsdPrice > 0 ? totalBtc * currentBtcUsdPrice : 0;
+
+            document.getElementById('onchainFeeSat').innerText = `${formatNumber(totalSats, 0)} sats`;
+            document.getElementById('onchainFeeBtc').innerText = `${totalBtc.toFixed(8)} BTC`;
+            document.getElementById('onchainFeeThb').innerText = `${formatNumber(totalThb)} ฿`;
+            document.getElementById('onchainFeeUsd').innerText = `≈ ${formatUsd(totalUsd)} USD`;
+
+            // ETA Calculation
+            let etaText = '~30 mins';
+            if (satPerVb >= mempoolFees.fastestFee) etaText = '~10 mins (Next Block)';
+            else if (satPerVb >= mempoolFees.halfHourFee) etaText = '~30 mins';
+            else if (satPerVb >= mempoolFees.hourFee) etaText = '~1 hour';
+            else etaText = '1+ hour (Economy)';
+
+            document.getElementById('onchainEtaVal').innerText = etaText;
+        }
+
+        // --- LocalStorage Auto-Save ---
+        function saveData() {
+            const data = {
+                mode: currentMode,
+                btcPrice: document.getElementById('btcPrice').value,
+                btcUsdPrice: currentBtcUsdPrice,
+                withdrawInput: document.getElementById('withdrawInput').value,
+                withdrawUnit: currentUnit,
+                feeSat: document.getElementById('feeSat').value,
+                lang: currentLang
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        function loadSavedData() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    if (data.mode) currentMode = data.mode;
+                    if (data.lang) currentLang = data.lang;
+                    if (data.btcPrice) document.getElementById('btcPrice').value = data.btcPrice;
+                    if (data.btcUsdPrice) {
+                        currentBtcUsdPrice = parseFloat(data.btcUsdPrice) || 0;
+                        updateUsdDisplay();
+                    }
+                    if (data.feeSat) document.getElementById('feeSat').value = data.feeSat;
+                    if (data.withdrawUnit) {
+                        currentUnit = data.withdrawUnit;
+                        updateUnitTabsUI();
+                        document.getElementById('withdrawUnitLabel').innerText = currentUnit;
+                    }
+                    if (data.withdrawInput) {
+                        document.getElementById('withdrawInput').value = data.withdrawInput;
+                        if (currentUnit === 'BTC') document.getElementById('withdrawInput').step = '0.00000001';
+                        else document.getElementById('withdrawInput').step = '1';
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load saved settings', e);
+            }
+        }
+
+        // --- Calculator Logic & API Fetching ---
+        const formatNumber = (num, decimals = 2) => {
+            return num.toLocaleString(currentLang === 'th' ? 'th-TH' : 'en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+        };
+
+        const formatUsd = (num) => {
+            return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+
+        function onPriceInputChange() {
+            calculate();
+            calculateOnchain();
+        }
+
+        function updateUsdDisplay() {
+            if (currentBtcUsdPrice > 0) {
+                document.getElementById('btcUsdHint').innerHTML = `<i class="fas fa-globe text-btc text-[10px]"></i> ≈ ${formatUsd(currentBtcUsdPrice)} USD`;
+            }
+        }
+
+        async function fetchBtcPrice() {
+            const btn = document.getElementById('refreshBtn');
+            const icon = btn.querySelector('i');
+            
+            icon.classList.add('fa-spin');
+            btn.classList.add('opacity-50', 'pointer-events-none');
+
+            try {
+                // 1. Fetch Binance USD Price
+                let usdFetched = false;
+                try {
+                    const binanceRes = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+                    const binanceData = await binanceRes.json();
+                    if (binanceData && binanceData.price) {
+                        currentBtcUsdPrice = parseFloat(binanceData.price);
+                        usdFetched = true;
+                    }
+                } catch (errBinance) {
+                    console.warn('Binance USD fetch failed, trying fallback...', errBinance);
+                }
+
+                // 2. Fetch Bitkub THB Price
+                let thbFetched = false;
+                try {
+                    const bitkubRes = await fetch('https://api.bitkub.com/api/market/ticker');
+                    const bitkubData = await bitkubRes.json();
+                    if (bitkubData && bitkubData.THB_BTC && bitkubData.THB_BTC.last) {
+                        document.getElementById('btcPrice').value = bitkubData.THB_BTC.last;
+                        thbFetched = true;
+                        document.getElementById('priceSourceTag').innerText = 'Bitkub/Binance';
+                    }
+                } catch (errBitkub) {
+                    console.warn('Bitkub fetch failed, falling back to CoinGecko...', errBitkub);
+                }
+
+                // 3. Fallback to CoinGecko
+                if (!thbFetched || !usdFetched) {
+                    const cgRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=thb,usd');
+                    const cgData = await cgRes.json();
+                    if (cgData && cgData.bitcoin) {
+                        if (!thbFetched && cgData.bitcoin.thb) {
+                            document.getElementById('btcPrice').value = cgData.bitcoin.thb;
+                        }
+                        if (!usdFetched && cgData.bitcoin.usd) {
+                            currentBtcUsdPrice = cgData.bitcoin.usd;
+                        }
+                        document.getElementById('priceSourceTag').innerText = 'CoinGecko';
+                    }
+                }
+
+                // 4. Fetch Mempool.space Recommended Fees
+                try {
+                    const mempoolRes = await fetch('https://mempool.space/api/v1/fees/recommended');
+                    if (mempoolRes.ok) {
+                        const mpData = await mempoolRes.json();
+                        mempoolFees = {
+                            fastestFee: mpData.fastestFee || 25,
+                            halfHourFee: mpData.halfHourFee || 18,
+                            hourFee: mpData.hourFee || 12,
+                            economyFee: mpData.economyFee || 6
+                        };
+                        document.getElementById('rateFastest').innerText = mempoolFees.fastestFee;
+                        document.getElementById('rate30m').innerText = mempoolFees.halfHourFee;
+                        document.getElementById('rate1h').innerText = mempoolFees.hourFee;
+                        document.getElementById('rateEco').innerText = mempoolFees.economyFee;
+
+                        document.getElementById('mempoolCompareBadge').innerText = `Mempool Live: ${mempoolFees.halfHourFee} sat/vB (~${mempoolFees.halfHourFee * 140} SAT)`;
+                    }
+                } catch (errMempool) {
+                    console.warn('Mempool API fetch failed', errMempool);
+                }
+
+                updateUsdDisplay();
+                calculate();
+                calculateOnchain();
+            } catch (error) {
+                console.error('Error fetching live price:', error);
+            } finally {
+                icon.classList.remove('fa-spin');
+                btn.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        }
+
+        function calculate() {
+            const t = translations[currentLang];
+            const price = parseFloat(document.getElementById('btcPrice').value) || 0;
+            const inputValue = parseFloat(document.getElementById('withdrawInput').value) || 0;
+            const feeSat = parseFloat(document.getElementById('feeSat').value) || 0;
+
+            let withdrawSat = 0;
+            if (currentUnit === 'SAT') {
+                withdrawSat = inputValue;
+            } else if (currentUnit === 'BTC') {
+                withdrawSat = inputValue * 100000000;
+            } else if (currentUnit === 'THB') {
+                withdrawSat = price > 0 ? (inputValue / price) * 100000000 : 0;
+            }
+
+            const withdrawBtc = withdrawSat / 100000000;
+            const withdrawThb = withdrawBtc * price;
+
+            const feeBtc = feeSat / 100000000;
+            const feeThb = feeBtc * price;
+            const netThb = withdrawThb - feeThb;
+
+            const withdrawUsd = currentBtcUsdPrice > 0 ? withdrawBtc * currentBtcUsdPrice : 0;
+            const feeUsd = currentBtcUsdPrice > 0 ? feeBtc * currentBtcUsdPrice : 0;
+            const netUsd = withdrawUsd - feeUsd;
+
+            const hintEl = document.getElementById('withdrawConvertedHint');
+            if (currentUnit === 'SAT') {
+                hintEl.innerText = `≈ ${withdrawBtc.toFixed(8)} BTC | ≈ ${formatNumber(withdrawThb)} ฿`;
+            } else if (currentUnit === 'BTC') {
+                hintEl.innerText = `≈ ${formatNumber(Math.round(withdrawSat), 0)} SAT | ≈ ${formatNumber(withdrawThb)} ฿`;
+            } else if (currentUnit === 'THB') {
+                hintEl.innerText = `≈ ${formatNumber(Math.round(withdrawSat), 0)} SAT | ≈ ${withdrawBtc.toFixed(8)} BTC`;
+            }
+
+            document.getElementById('feeBtcHint').innerText = `${feeBtc.toFixed(8)} BTC (${formatNumber(feeThb)} ฿)`;
+
+            const feePercent = withdrawSat > 0 ? (feeSat / withdrawSat) * 100 : 0;
+
+            document.getElementById('netThb').innerText = `${formatNumber(netThb > 0 ? netThb : 0)} ฿`;
+            document.getElementById('netUsd').innerText = netUsd > 0 ? `≈ ${formatUsd(netUsd)} USD` : '≈ $0.00 USD';
+
+            document.getElementById('feeThb').innerText = `${formatNumber(feeThb)} ฿`;
+            document.getElementById('feeUsd').innerText = `≈ ${formatUsd(feeUsd)} USD`;
+            
+            const percentEl = document.getElementById('feePercent');
+            percentEl.innerText = `${feePercent.toFixed(2)}%`;
+
+            const statusBox = document.getElementById('statusBox');
+            
+            const styleRed = 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50';
+            const styleGreen = 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50';
+            const styleYellow = 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50';
+            
+            if (withdrawSat <= 0 || withdrawSat <= feeSat) {
+                statusBox.className = `p-3.5 rounded-xl text-center font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2 ${styleRed}`;
+                statusBox.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${t.statusTooLow}`;
+                percentEl.className = 'font-bold text-2xl tracking-tight text-red-500 dark:text-red-400';
+            } else if (feePercent <= 1.0) {
+                statusBox.className = `p-3.5 rounded-xl text-center font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2 ${styleGreen}`;
+                statusBox.innerHTML = `<i class="fas fa-check-circle"></i> ${t.statusEfficient}`;
+                percentEl.className = 'font-bold text-2xl tracking-tight text-emerald-500 dark:text-emerald-400';
+            } else if (feePercent <= 2.5) {
+                statusBox.className = `p-3.5 rounded-xl text-center font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2 ${styleYellow}`;
+                statusBox.innerHTML = `<i class="fas fa-info-circle"></i> ${t.statusAcceptable}`;
+                percentEl.className = 'font-bold text-2xl tracking-tight text-amber-500 dark:text-amber-400';
+            } else {
+                statusBox.className = `p-3.5 rounded-xl text-center font-medium text-sm transition-all duration-300 flex items-center justify-center gap-2 ${styleRed}`;
+                statusBox.innerHTML = `<i class="fas fa-times-circle"></i> ${t.statusNotWorth}`;
+                percentEl.className = 'font-bold text-2xl tracking-tight text-red-500 dark:text-red-400';
+            }
+
+            highlightActivePreset(feeSat);
+            updateUsdDisplay();
+            saveData();
+        }
+
+        // Initialize
+        initTheme();
+        loadSavedData();
+        applyLanguage();
+        switchCalcMode(currentMode);
+        window.onload = () => {
+            fetchBtcPrice();
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW reg failed:', err));
+            }
+        };
+    </script>
+</body>
+</html>
